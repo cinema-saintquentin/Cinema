@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saint Quentin — Gestion Technique</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root{--red:#8B1538;--burg:#4A0E1F;--gold:#D4AF37;--lgold:#F4E4BC;--cream:#F5F1E8;--dark:#1A1A1A;--cell:34px;}
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Outfit',sans-serif;background:linear-gradient(135deg,var(--dark),var(--burg));color:var(--cream);min-height:100vh;}
+        .container{max-width:1600px;margin:0 auto;padding:1.5rem;}
+
+        header{text-align:center;padding:1.2rem 2rem 1.5rem;border-bottom:2px solid var(--gold);margin-bottom:1.5rem;}
+        h1{font-family:'Playfair Display',serif;font-size:2.8rem;font-weight:900;color:var(--gold);letter-spacing:2px;}
+        .sub{font-size:.88rem;color:var(--lgold);letter-spacing:3px;text-transform:uppercase;font-weight:300;}
+
+        /* ═══ ALERTE URGENCE GLOBALE ═══ */
+        .alert-banner{
+            display:none;align-items:center;gap:.6rem;
+            background:rgba(127,10,10,.7);
+            border-left:3px solid #EF4444;border-radius:6px;
+            padding:.5rem .9rem;margin-bottom:.8rem;
+            font-size:.8rem;
+        }
+        .alert-banner.visible{display:flex;}
+        .alert-icon{font-size:1rem;}
+        .alert-text{flex:1;color:#FEE2E2;line-height:1.6;}
+        .alert-dismiss{background:transparent;border:1px solid rgba(254,226,226,.3);color:rgba(254,226,226,.7);padding:.15rem .55rem;border-radius:5px;cursor:pointer;font-size:.72rem;white-space:nowrap;}
+        .alert-dismiss:hover{border-color:#FEE2E2;color:#FEE2E2;}
+        @keyframes pulse-alert{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
+        @keyframes spin-slow{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+        /* ═══ NAV ═══ */
+        .nav-tabs{display:flex;gap:.8rem;margin-bottom:1.5rem;flex-wrap:wrap;justify-content:center;}
+        .nav-tab{padding:.55rem 1.4rem;border-radius:8px;cursor:pointer;font-weight:600;font-size:.85rem;letter-spacing:1px;text-transform:uppercase;transition:all .25s;border:2px solid var(--gold);color:var(--lgold);background:transparent;font-family:'Outfit',sans-serif;}
+        .nav-tab:hover{background:rgba(212,175,55,.15);}
+        .nav-tab.active{background:var(--gold);color:var(--dark);}
+        .page{display:none;}.page.active{display:block;}
+
+        /* ═══ STOCKS — 2 groupes côte à côte ═══ */
+        .stocks-wrap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem;}
+        @media(max-width:1100px){.stocks-wrap{grid-template-columns:1fr 1fr;}}
+        @media(max-width:700px){.stocks-wrap{grid-template-columns:1fr;}}
+        .stocks-group{background:rgba(0,0,0,.2);border:1px solid rgba(212,175,55,.2);border-radius:10px;padding:.9rem;}
+        .stocks-group.group-ice{border-color:rgba(96,165,250,.25);}
+        .stocks-group.group-duo{border-color:rgba(245,158,11,.3);}
+        .stocks-group-title{font-family:'Playfair Display',serif;font-size:1rem;color:var(--gold);margin-bottom:.7rem;}
+        .stocks-group.group-ice .stocks-group-title{color:#60A5FA;}
+        .stocks-group.group-duo .stocks-group-title{color:#F59E0B;}
+        .stocks-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.55rem;}
+
+        /* ═══ STAT CARDS STOCKS ═══ */
+        .stat-card{
+            background:linear-gradient(135deg,rgba(139,21,56,.7),rgba(74,14,31,.7));
+            border:1px solid rgba(212,175,55,.5);border-radius:8px;
+            padding:.6rem .75rem;display:grid;
+            grid-template-rows:auto auto auto;
+            gap:0;
+        }
+        .stat-card.ice{border-color:rgba(96,165,250,.5);background:linear-gradient(135deg,rgba(30,58,95,.8),rgba(15,32,53,.8));}
+        .stat-card.duo{border-color:rgba(245,158,11,.45);background:linear-gradient(135deg,rgba(92,46,0,.8),rgba(55,28,0,.8));}
+        .slabel{font-size:.62rem;letter-spacing:1px;text-transform:uppercase;color:rgba(244,228,188,.7);line-height:1.3;min-height:2.4em;}
+        .stat-card.ice .slabel{color:rgba(147,197,253,.7);}
+        .stat-card.duo .slabel{color:rgba(253,211,77,.8);}
+        .sval{font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:700;color:var(--gold);line-height:1.1;margin:.1rem 0;}
+        .stat-card.ice .sval{color:#60A5FA;}
+        .stat-card.duo .sval{color:#F59E0B;}
+        .stock-input{width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(212,175,55,.3);border-radius:5px;color:var(--cream);padding:.2rem .4rem;font-size:.8rem;font-family:'Outfit',sans-serif;}
+        .stat-card.ice .stock-input{border-color:rgba(96,165,250,.3);}
+        .stat-card.duo .stock-input{border-color:rgba(245,158,11,.3);}
+
+        /* ═══ TOTAUX — 2 groupes côte à côte ═══ */
+        .totals-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.2rem;}
+        @media(max-width:900px){.totals-wrap{grid-template-columns:1fr;}}
+        .totals-group{background:rgba(0,0,0,.2);border:1px solid rgba(212,175,55,.15);border-radius:10px;padding:.9rem;}
+        .totals-group.group-rh{border-color:rgba(167,139,250,.2);}
+        .totals-group-title{font-size:.9rem;font-weight:600;color:var(--gold);margin-bottom:.6rem;text-transform:uppercase;letter-spacing:1.5px;}
+        .totals-group.group-rh .totals-group-title{color:#C4B5FD;}
+        .totals-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:.5rem;}
+        .tot-card{background:rgba(0,0,0,.25);border-radius:7px;padding:.5rem .6rem;border:1px solid rgba(212,175,55,.15);text-align:center;}
+        .tot-card.rh{border-color:rgba(167,139,250,.2);}
+        .tot-lbl{font-size:.6rem;text-transform:uppercase;letter-spacing:1px;color:rgba(244,228,188,.6);margin-bottom:.15rem;}
+        .tot-card.rh .tot-lbl{color:rgba(196,181,253,.6);}
+        .tot-val{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--gold);}
+        .tot-card.rh .tot-val{color:#A78BFA;}
+
+        /* ═══ SALLES GRID ═══ */
+        .stitle{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--gold);text-align:center;margin-bottom:1rem;}
+        .rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:1rem;}
+        .rcard{background:rgba(139,21,56,.45);border:2px solid var(--gold);border-radius:12px;padding:1rem;cursor:default;transition:all .3s;text-align:center;position:relative;}
+        .rcard.ice{border-color:#60A5FA;background:rgba(30,58,95,.5);}
+        .rcard:hover{box-shadow:0 8px 24px rgba(212,175,55,.3);}
+        .rcard.ice:hover{box-shadow:0 8px 24px rgba(96,165,250,.3);}
+
+        /* Badge anomalies */
+        .priority-badge{
+            position:absolute;top:-7px;right:-7px;
+            min-width:20px;height:20px;padding:0 4px;border-radius:10px;
+            font-size:.62rem;font-weight:900;
+            display:flex;align-items:center;justify-content:center;
+            border:2px solid var(--dark);cursor:default;white-space:nowrap;
+        }
+        .prio-crit{background:#EF4444;color:white;animation:pulse-dot 1.2s ease-in-out infinite;}
+        .prio-high{background:#F97316;color:white;}
+        .prio-med {background:#EAB308;color:var(--dark);}
+        .prio-low {background:#6B7280;color:white;}
+        @keyframes pulse-dot{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6)}50%{box-shadow:0 0 0 5px rgba(239,68,68,0)}}
+
+        .rnum{font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:700;color:var(--gold);}
+        .rcard.ice .rnum{color:#60A5FA;}
+
+        /* ✓ OK bien visible */
+        .ok-badge{
+            font-size:.95rem;font-weight:900;color:#22C55E;
+            letter-spacing:1px;display:block;margin:.3rem 0;
+        }
+
+        .rissues{font-size:.73rem;color:var(--lgold);margin:.3rem 0;min-height:1.1rem;}
+        .ic{display:inline-block;background:rgba(212,175,55,.2);padding:.1rem .4rem;border-radius:20px;margin:.1rem;font-weight:600;font-size:.7rem;}
+        .ic.rh{background:rgba(167,139,250,.2);color:#C4B5FD;}
+
+        /* Date de vérification */
+        .rdate{font-size:.65rem;color:rgba(244,228,188,.45);margin:.3rem 0 .5rem;min-height:.9rem;}
+        .rdate.recent{color:#4ADE80;}
+        .rdate.old-1{color:#FCD34D;}
+        .rdate.old-2{color:#F87171;}
+        .rdate.old-3{color:#EF4444;font-weight:700;animation:blink-date .9s steps(1) infinite;}
+        @keyframes blink-date{0%,100%{opacity:1}50%{opacity:.35}}
+
+        /* Boutons salles — même taille, harmonieux */
+        .room-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.35rem;margin-top:.5rem;}
+        .room-btn{
+            padding:0 .3rem;border-radius:7px;border:none;
+            font-family:'Outfit',sans-serif;font-size:.65rem;font-weight:700;
+            cursor:pointer;transition:all .2s;
+            height:34px;display:flex;align-items:center;justify-content:center;
+            text-align:center;line-height:1.2;gap:.15rem;white-space:normal;
+        }
+        .btn-seats{background:var(--gold);color:var(--dark);border:2px solid var(--gold);}
+        .btn-seats:hover{background:var(--lgold);border-color:var(--lgold);}
+        .btn-son{background:rgba(212,175,55,.12);color:var(--lgold);border:2px solid rgba(212,175,55,.5);}
+        .btn-son:hover{background:rgba(212,175,55,.25);border-color:var(--gold);color:var(--gold);}
+        .btn-secu{background:rgba(139,21,56,.4);color:var(--cream);border:2px solid rgba(212,175,55,.28);}
+        .btn-secu:hover{background:rgba(139,21,56,.7);border-color:rgba(212,175,55,.55);}
+        .rcard.ice .btn-seats{background:#3B82F6;color:white;border-color:#3B82F6;}
+        .rcard.ice .btn-seats:hover{background:#60A5FA;border-color:#60A5FA;}
+        .rcard.ice .btn-son{background:rgba(59,130,246,.12);color:#93C5FD;border-color:rgba(96,165,250,.45);}
+        .rcard.ice .btn-son:hover{background:rgba(59,130,246,.25);border-color:#60A5FA;color:#60A5FA;}
+        .rcard.ice .btn-secu{background:rgba(30,58,95,.5);color:#BFDBFE;border-color:rgba(96,165,250,.22);}
+        .rcard.ice .btn-secu:hover{background:rgba(30,58,95,.85);border-color:rgba(96,165,250,.5);}
+
+        /* ═══ ROOM VIEW ═══ */
+        #room-view{display:none;}
+        .back-btn{background:var(--gold);color:var(--dark);border:none;padding:.55rem 1.4rem;border-radius:8px;font-family:'Outfit',sans-serif;font-size:.88rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-bottom:1.2rem;}
+        .back-btn:hover{background:var(--lgold);transform:translateX(-3px);}
+        .rhead{text-align:center;padding:.8rem 2rem;background:rgba(139,21,56,.3);border:1px solid var(--gold);border-radius:10px;margin-bottom:1rem;}
+        .rtitle{font-family:'Playfair Display',serif;font-size:1.7rem;color:var(--gold);}
+        .rmode-badge{display:inline-block;margin-top:.3rem;padding:.2rem .8rem;border-radius:20px;font-size:.78rem;font-weight:600;letter-spacing:1px;}
+        .badge-seats{background:rgba(212,175,55,.2);color:var(--gold);border:1px solid var(--gold);}
+        .badge-son{background:rgba(139,21,56,.4);color:var(--lgold);border:1px solid var(--red);}
+        .badge-secu{background:rgba(74,14,31,.4);color:var(--lgold);border:1px solid rgba(212,175,55,.4);}
+
+        /* ═══ CHECKLIST ═══ */
+        .checklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin:1rem 0;}
+        .check-card{background:linear-gradient(135deg,var(--red),var(--burg));border:1px solid rgba(212,175,55,.4);border-radius:10px;padding:1.1rem;}
+        .check-title{font-family:'Playfair Display',serif;font-size:1rem;color:var(--gold);margin-bottom:.7rem;}
+        .check-item{display:flex;align-items:center;gap:.55rem;margin-bottom:.5rem;cursor:pointer;}
+        .check-item input[type=checkbox]{width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;}
+        .check-item label{cursor:pointer;font-size:.83rem;}
+        .check-note{width:100%;margin-top:.7rem;background:rgba(255,255,255,.08);border:1px solid rgba(212,175,55,.3);border-radius:6px;color:var(--cream);padding:.45rem .65rem;font-size:.82rem;font-family:'Outfit',sans-serif;resize:vertical;min-height:50px;}
+        .check-date-line{font-size:.72rem;color:rgba(244,228,188,.5);margin-bottom:.5rem;font-style:italic;}
+        .validate-btn{background:#22C55E;color:#052e16;border:none;padding:.4rem .9rem;border-radius:6px;font-family:'Outfit',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
+        .validate-btn:hover{background:#4ADE80;transform:translateY(-1px);}
+
+        /* ═══ PLAN DE SALLE ═══ */
+        .plan-wrap{background:rgba(10,5,8,.8);border:1px solid rgba(212,175,55,.2);border-radius:12px;padding:1.5rem;overflow-x:auto;margin-bottom:1rem;}
+        .grid-main{display:grid;grid-template-columns:26px repeat(32,var(--cell));grid-auto-rows:var(--cell);gap:4px;width:fit-content;margin:0 auto;}
+        .cell-lbl{display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:.9rem;font-weight:700;color:var(--gold);}
+        .cell-empty{}
+        .cell-aisle{position:relative;}
+        .cell-aisle::before{content:'';position:absolute;top:0;bottom:0;left:50%;width:2px;transform:translateX(-50%);background:linear-gradient(180deg,transparent,rgba(212,175,55,.35) 30%,rgba(212,175,55,.35) 70%,transparent);}
+        .cell-pmr{display:flex;align-items:center;justify-content:center;background:rgba(212,175,55,.06);border:1.5px dashed rgba(212,175,55,.35);border-radius:5px;font-size:.6rem;font-weight:700;color:rgba(212,175,55,.6);}
+        .cell-seat{display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,var(--red),var(--burg));border:1.5px solid var(--gold);border-radius:7px 7px 3px 3px;font-size:.56rem;font-weight:700;color:var(--cream);cursor:pointer;position:relative;transition:transform .15s,box-shadow .15s;user-select:none;}
+        .cell-seat::after{content:'';position:absolute;bottom:-2px;left:15%;width:70%;height:3px;background:rgba(212,175,55,.4);border-radius:2px;}
+        .cell-seat:hover{transform:scale(1.18);box-shadow:0 0 10px rgba(212,175,55,.8);z-index:50;}
+        /* Remplacement */
+        .cell-seat.broken-armrest{background:linear-gradient(150deg,#D97706,#92400E);border-color:#FCD34D;}
+        .cell-seat.broken-seat   {background:linear-gradient(150deg,#DC2626,#7F1D1D);border-color:#FCA5A5;}
+        .cell-seat.broken-back   {background:linear-gradient(150deg,#7C3AED,#4C1D95);border-color:#C4B5FD;}
+        /* Pied : gris anthracite, bien distinct */
+        .cell-seat.broken-pied   {background:linear-gradient(150deg,#4B5563,#1F2937);border-color:#9CA3AF;}
+        .cell-seat.broken-patere {background:linear-gradient(150deg,#0E7490,#164E63);border-color:#67E8F9;}
+        /* Décousu → réhoussage */
+        .cell-seat.broken-armrest_dec{background:linear-gradient(150deg,#0369A1,#075985);border-color:#7DD3FC;}
+        .cell-seat.broken-seat_dec   {background:linear-gradient(150deg,#BE185D,#9D174D);border-color:#F9A8D4;}
+        .cell-seat.broken-back_dec   {background:linear-gradient(150deg,#4D7C0F,#3F6212);border-color:#BEF264;}
+        /* Fauteuils DUO */
+        .cell-duo{display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,#854D0E,#713F12);border:2px solid #F59E0B;border-radius:7px 7px 3px 3px;font-size:.48rem;font-weight:900;color:#FEF3C7;cursor:pointer;position:relative;transition:transform .15s,box-shadow .15s;user-select:none;letter-spacing:.5px;}
+        .cell-duo::after{content:'2×';position:absolute;top:-5px;right:-3px;background:#F59E0B;color:#1c0a00;font-size:.45rem;font-weight:900;padding:0 .2rem;border-radius:3px;}
+        .cell-duo:hover{transform:scale(1.18);box-shadow:0 0 10px rgba(245,158,11,.8);z-index:50;}
+
+        .screen-wrap{text-align:center;margin-top:1rem;}
+        .screen-bar{display:inline-block;padding:.6rem 0;width:80%;max-width:800px;border-top:3px solid var(--gold);border-bottom:3px solid var(--gold);background:linear-gradient(90deg,transparent,rgba(212,175,55,.2) 30%,rgba(212,175,55,.2) 70%,transparent);font-family:'Playfair Display',serif;font-size:1.1rem;letter-spacing:8px;color:var(--gold);}
+
+        .legend{display:flex;flex-wrap:wrap;gap:.55rem;justify-content:center;padding:.7rem;background:rgba(0,0,0,.3);border:1px solid rgba(212,175,55,.2);border-radius:10px;margin-top:1rem;}
+        .leg-item{display:flex;align-items:center;gap:.3rem;}
+        .leg-dot{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--gold);}
+        .leg-dot.ok {background:linear-gradient(150deg,var(--red),var(--burg));}
+        .leg-dot.ar {background:linear-gradient(150deg,#D97706,#92400E);}
+        .leg-dot.se {background:linear-gradient(150deg,#DC2626,#7F1D1D);}
+        .leg-dot.ba {background:linear-gradient(150deg,#7C3AED,#4C1D95);}
+        .leg-dot.pi {background:linear-gradient(150deg,#4B5563,#1F2937);border-color:#9CA3AF;}
+        .leg-dot.pa {background:linear-gradient(150deg,#0E7490,#164E63);}
+        .leg-dot.ard{background:linear-gradient(150deg,#0369A1,#075985);border-color:#7DD3FC;}
+        .leg-dot.sed{background:linear-gradient(150deg,#BE185D,#9D174D);border-color:#F9A8D4;}
+        .leg-dot.bad{background:linear-gradient(150deg,#4D7C0F,#3F6212);border-color:#BEF264;}
+        .leg-sep{width:1px;height:18px;background:rgba(212,175,55,.3);margin:0 .15rem;}
+        .leg-txt{font-size:.75rem;}
+
+        /* ═══ BON DE COMMANDE & RAPPORT ═══ */
+        .order-header{display:flex;gap:1rem;margin-bottom:1.2rem;align-items:center;flex-wrap:wrap;}
+        .order-actions{display:flex;gap:.7rem;flex-wrap:wrap;}
+        .action-btn{padding:.55rem 1.2rem;border-radius:8px;border:none;font-family:'Outfit',sans-serif;font-size:.82rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .25s;}
+        .action-btn.print-btn{background:var(--gold);color:var(--dark);}
+        .action-btn.print-btn:hover{background:var(--lgold);}
+        .action-btn.mail-btn{background:var(--red);color:var(--cream);border:1px solid var(--gold);}
+        .action-btn.mail-btn:hover{background:var(--burg);}
+        .action-btn.clear-btn{background:transparent;color:var(--lgold);border:2px solid rgba(212,175,55,.35);}
+        .action-btn.clear-btn:hover{background:rgba(212,175,55,.1);}
+
+        .order-section{margin-bottom:1.4rem;}
+        .order-section-title{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--gold);padding-bottom:.35rem;border-bottom:1px solid rgba(212,175,55,.3);margin-bottom:.7rem;}
+        .order-table{width:100%;border-collapse:collapse;}
+        .order-table th{background:rgba(212,175,55,.15);color:var(--gold);padding:.5rem .75rem;text-align:left;font-size:.76rem;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid rgba(212,175,55,.3);}
+        .order-table td{padding:.45rem .75rem;border-bottom:1px solid rgba(212,175,55,.08);font-size:.83rem;vertical-align:middle;}
+        .order-table tr:hover td{background:rgba(212,175,55,.04);}
+        .qty-cell{color:var(--gold);font-weight:700;font-family:'Playfair Display',serif;font-size:1.05rem;}
+        .room-cell{color:var(--lgold);font-size:.76rem;}
+        .badge-urgent{background:rgba(220,38,38,.3);color:#FCA5A5;padding:.12rem .45rem;border-radius:12px;font-size:.7rem;font-weight:700;}
+        .badge-ok{background:rgba(5,150,105,.2);color:#6EE7B7;padding:.12rem .45rem;border-radius:12px;font-size:.7rem;}
+        .badge-rehousse{background:rgba(124,58,237,.3);color:#C4B5FD;padding:.12rem .45rem;border-radius:12px;font-size:.7rem;font-weight:700;}
+
+        /* Transport palette */
+        .transport-section{background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.25);border-radius:10px;padding:1rem;}
+        .transport-info{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.7rem;margin-bottom:1rem;}
+        .transport-stat{background:rgba(0,0,0,.25);border-radius:8px;padding:.6rem .8rem;}
+        .transport-lbl{display:block;font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:rgba(196,181,253,.6);margin-bottom:.2rem;}
+        .transport-val{font-size:.88rem;font-weight:700;color:#C4B5FD;}
+        .poids-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.7rem;}
+        .poids-item{background:rgba(0,0,0,.2);border:1px solid rgba(167,139,250,.18);border-radius:7px;padding:.6rem .75rem;}
+        .poids-lbl{display:block;font-size:.72rem;color:rgba(196,181,253,.8);margin-bottom:.3rem;}
+        .poids-input{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(167,139,250,.35);border-radius:5px;color:var(--cream);padding:.25rem .5rem;font-size:.82rem;font-family:'Outfit',sans-serif;}
+        .no-order{text-align:center;padding:2.5rem;color:rgba(212,175,55,.5);font-style:italic;}
+
+        .email-form{background:rgba(139,21,56,.2);border:1px solid rgba(212,175,55,.3);border-radius:10px;padding:1.1rem;margin-bottom:1.1rem;display:none;}
+        .email-form.visible{display:block;}
+        .email-form input,.email-form textarea{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(212,175,55,.3);border-radius:6px;color:var(--cream);padding:.45rem .75rem;font-size:.83rem;font-family:'Outfit',sans-serif;margin-bottom:.55rem;}
+        .email-form textarea{min-height:75px;resize:vertical;}
+
+        /* RAPPORT VÉRIF — tableau par salle */
+        .rapport-room{background:rgba(0,0,0,.25);border:1px solid rgba(212,175,55,.18);border-radius:10px;padding:1rem;margin-bottom:1rem;}
+        .rapport-room-title{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--gold);margin-bottom:.4rem;display:flex;align-items:center;justify-content:space-between;}
+        .rapport-date{font-size:.72rem;color:rgba(244,228,188,.5);font-style:italic;}
+        .rapport-date.recent{color:#4ADE80;}
+        .rapport-date.old-1{color:#FCD34D;}
+        .rapport-date.old-2{color:#F87171;}
+        .rapport-date.old-3{color:#EF4444;font-weight:700;animation:blink-date .9s steps(1) infinite;}
+        .rapport-checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.5rem;margin-top:.5rem;}
+        .rapport-cat{font-size:.8rem;}
+        .rapport-cat-title{font-weight:700;color:var(--lgold);margin-bottom:.25rem;}
+        .rapport-item{font-size:.75rem;display:flex;align-items:center;gap:.3rem;padding:.1rem 0;}
+        .rapport-item .ri-ok{color:#4ADE80;}
+        .rapport-item .ri-no{color:#F87171;}
+        .rapport-note{font-size:.72rem;color:rgba(244,228,188,.5);font-style:italic;margin-top:.25rem;}
+        .rapport-none{font-size:.8rem;color:rgba(244,228,188,.4);font-style:italic;padding:.3rem 0;}
+        .rapport-type-tabs{display:flex;gap:.6rem;margin-bottom:1rem;}
+        .rtype-tab{padding:.4rem 1rem;border-radius:6px;border:2px solid rgba(212,175,55,.3);color:var(--lgold);background:transparent;font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;}
+        .rtype-tab.active{background:var(--gold);color:var(--dark);border-color:var(--gold);}
+
+        /* ═══ MODAL SIÈGE ═══ */
+        .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.83);z-index:1000;align-items:center;justify-content:center;}
+        .modal.active{display:flex;}
+        .mbox{background:linear-gradient(135deg,var(--red),var(--burg));border:2px solid var(--gold);border-radius:14px;padding:1.6rem;max-width:450px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.6);animation:scaleIn .25s ease;}
+        .mtitle{font-family:'Playfair Display',serif;font-size:1.35rem;color:var(--gold);text-align:center;margin-bottom:.9rem;}
+        .mclose{display:flex;justify-content:flex-end;margin-bottom:.25rem;}
+        .mclose-btn{background:transparent;border:none;color:var(--lgold);font-size:1.3rem;cursor:pointer;padding:.2rem .5rem;border-radius:4px;transition:all .2s;}
+        .mclose-btn:hover{background:rgba(255,255,255,.1);}
+        .mgroup-title{font-size:.68rem;letter-spacing:2px;text-transform:uppercase;color:var(--lgold);margin:.65rem 0 .35rem;padding-left:.2rem;opacity:.65;}
+        .mopts{display:grid;gap:.45rem;}
+        .mopt{background:rgba(245,241,232,.07);border:2px solid rgba(245,241,232,.28);color:var(--cream);padding:.6rem .85rem;border-radius:8px;cursor:pointer;font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:600;letter-spacing:.7px;text-transform:uppercase;transition:all .2s;text-align:left;}
+        .mopt:hover{background:rgba(212,175,55,.2);border-color:var(--gold);}
+        .mopt.active{background:var(--gold);color:var(--dark);border-color:var(--gold);}
+        .mopt.rehousse-opt{border-color:rgba(167,139,250,.35);}
+        .mopt.rehousse-opt:hover{background:rgba(167,139,250,.2);border-color:#A78BFA;}
+        .mopt.rehousse-opt.active{background:#7C3AED;color:white;border-color:#A78BFA;}
+        .mhint{font-size:.7rem;color:rgba(245,241,232,.4);text-align:center;margin-top:.55rem;font-style:italic;}
+
+        /* PRINT */
+        @media print{
+            body{background:white!important;color:black!important;}
+            header,.nav-tabs,.back-btn,.order-actions,.email-form,#room-view,.stocks-wrap,.totals-wrap,.rooms,.stitle,.alert-banner,.rapport-type-tabs{display:none!important;}
+            #page-order.active,#page-rapport.active{display:block!important;}
+            .order-table th{background:#eee!important;color:black!important;}
+            .order-table td{color:black!important;border-bottom:1px solid #ccc!important;}
+            .order-section-title,.rapport-room-title{color:black!important;}
+            .print-header{display:block!important;}
+            .rapport-room{border:1px solid #ccc!important;background:white!important;}
+            .rapport-cat-title,.rapport-item{color:black!important;}
+        }
+        .print-header{display:none;text-align:center;margin-bottom:1rem;border-bottom:2px solid #ccc;padding-bottom:1rem;}
+
+        @keyframes scaleIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>SAINT QUENTIN</h1>
+        <div class="sub">Gestion Technique du Parc</div>
+    </header>
+
+    <!-- BANNIÈRE ALERTE URGENCE -->
+    <div class="alert-banner" id="alert-banner">
+        <span class="alert-icon">🚨</span>
+        <span class="alert-text" id="alert-text">Des problèmes critiques requièrent une intervention immédiate !</span>
+        <button class="alert-dismiss" onclick="dismissAlert()">Compris</button>
+    </div>
+
+    <div class="nav-tabs">
+        <button class="nav-tab active" onclick="showPage('dashboard')">🏠 Tableau de bord</button>
+        <button class="nav-tab" onclick="showPage('order')">📋 Bon de commande</button>
+        <button class="nav-tab" onclick="showPage('rapport')">📊 Rapport de vérif</button>
+    </div>
+
+    <!-- ══════════════════════════
+         PAGE DASHBOARD
+    ══════════════════════════ -->
+    <div id="page-dashboard" class="page active">
+
+        <!-- STOCKS sur 3 colonnes -->
+        <div class="stocks-wrap">
+            <div class="stocks-group">
+                <div class="stocks-group-title">📦 Stock — Salles 1 à 10</div>
+                <div class="stocks-row" id="stock-regular"></div>
+            </div>
+            <div class="stocks-group group-ice">
+                <div class="stocks-group-title">🧊 Stock — Salle ICE</div>
+                <div class="stocks-row" id="stock-ice"></div>
+            </div>
+            <div class="stocks-group group-duo">
+                <div class="stocks-group-title">🪑 Stock — Pièces DUO</div>
+                <div class="stocks-row" id="stock-duo"></div>
+            </div>
+        </div>
+
+        <!-- TOTAUX sur 2 colonnes -->
+        <div class="totals-wrap">
+            <div class="totals-group">
+                <div class="totals-group-title">🔧 À remplacer</div>
+                <div class="totals-row">
+                    <div class="tot-card"><div class="tot-lbl">Acoudoirs</div><div class="tot-val" id="tot-ar">0</div></div>
+                    <div class="tot-card"><div class="tot-lbl">Assises</div><div class="tot-val" id="tot-se">0</div></div>
+                    <div class="tot-card"><div class="tot-lbl">Dossiers</div><div class="tot-val" id="tot-ba">0</div></div>
+                    <div class="tot-card"><div class="tot-lbl">Pieds</div><div class="tot-val" id="tot-pi">0</div></div>
+                    <div class="tot-card"><div class="tot-lbl">Patères ICE</div><div class="tot-val" id="tot-pa">0</div></div>
+                </div>
+            </div>
+            <div class="totals-group group-rh">
+                <div class="totals-group-title">🧵 En réhoussage</div>
+                <div class="totals-row">
+                    <div class="tot-card rh"><div class="tot-lbl">Acoudoirs</div><div class="tot-val" id="tot-ard">0</div></div>
+                    <div class="tot-card rh"><div class="tot-lbl">Assises</div><div class="tot-val" id="tot-sed">0</div></div>
+                    <div class="tot-card rh"><div class="tot-lbl">Dossiers</div><div class="tot-val" id="tot-bad">0</div></div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="stitle">Vos 11 Salles</h2>
+        <div class="rooms" id="rooms-grid"></div>
+    </div>
+
+    <!-- ══════════════════════════
+         PAGE BON DE COMMANDE
+    ══════════════════════════ -->
+    <div id="page-order" class="page">
+        <div class="print-header">
+            <h2 style="font-size:1.5rem;margin-bottom:.3rem">BON DE COMMANDE</h2>
+            <p id="print-date" style="font-size:.9rem;color:#555"></p>
+        </div>
+        <div class="order-header">
+            <div style="flex:1">
+                <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--gold)">📋 Bon de commande</div>
+                <div style="font-size:.8rem;color:var(--lgold);margin-top:.15rem">Généré depuis stocks et pannes déclarées</div>
+            </div>
+            <div class="order-actions">
+                <button class="action-btn print-btn" onclick="printOrder()">🖨️ Imprimer</button>
+                <button class="action-btn mail-btn" onclick="toggleMail('order')">✉️ Envoyer</button>
+                <button class="action-btn clear-btn" onclick="refreshOrder()">🔄 Actualiser</button>
+            </div>
+        </div>
+        <div class="email-form" id="email-form-order">
+            <div style="font-weight:600;color:var(--gold);margin-bottom:.55rem">✉️ Envoi par email</div>
+            <input type="email" id="email-to-order" placeholder="Destinataire">
+            <input type="text" id="email-subj-order" placeholder="Objet">
+            <textarea id="email-body-order" placeholder="Message..."></textarea>
+            <div style="display:flex;gap:.7rem;">
+                <button class="action-btn print-btn" onclick="sendMail('order')" style="flex:1">Envoyer</button>
+                <button class="action-btn clear-btn" onclick="toggleMail('order')" style="flex:1">Annuler</button>
+            </div>
+        </div>
+        <div id="order-content"></div>
+    </div>
+
+    <!-- ══════════════════════════
+         PAGE RAPPORT VÉRIF
+    ══════════════════════════ -->
+    <div id="page-rapport" class="page">
+        <div class="print-header">
+            <h2 style="font-size:1.5rem;margin-bottom:.3rem">RAPPORT DE VÉRIFICATION</h2>
+            <p id="print-date-rapport" style="font-size:.9rem;color:#555"></p>
+        </div>
+        <div class="order-header">
+            <div style="flex:1">
+                <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--gold)">📊 Rapport de vérification</div>
+                <div style="font-size:.8rem;color:var(--lgold);margin-top:.15rem">Son & Image · Sécurité — Toutes salles</div>
+            </div>
+            <div class="order-actions">
+                <button class="action-btn print-btn" onclick="printRapport()">🖨️ Imprimer</button>
+                <button class="action-btn mail-btn" onclick="toggleMail('rapport')">✉️ Envoyer</button>
+                <button class="action-btn clear-btn" onclick="refreshRapport()">🔄 Actualiser</button>
+            </div>
+        </div>
+        <div class="email-form" id="email-form-rapport">
+            <div style="font-weight:600;color:var(--gold);margin-bottom:.55rem">✉️ Envoi par email</div>
+            <input type="email" id="email-to-rapport" placeholder="Destinataire">
+            <input type="text" id="email-subj-rapport" placeholder="Objet">
+            <textarea id="email-body-rapport" placeholder="Message..."></textarea>
+            <div style="display:flex;gap:.7rem;">
+                <button class="action-btn print-btn" onclick="sendMail('rapport')" style="flex:1">Envoyer</button>
+                <button class="action-btn clear-btn" onclick="toggleMail('rapport')" style="flex:1">Annuler</button>
+            </div>
+        </div>
+        <div class="rapport-type-tabs">
+            <button class="rtype-tab active" onclick="switchRapportType('son',this)">🔊 Son & Image</button>
+            <button class="rtype-tab" onclick="switchRapportType('secu',this)">🛡️ Sécurité</button>
+        </div>
+        <div id="rapport-content"></div>
+    </div>
+
+    <!-- ROOM VIEW -->
+    <div id="room-view">
+        <button class="back-btn" onclick="closeRoom()">← Tableau de bord</button>
+        <div class="rhead">
+            <div class="rtitle" id="r-title"></div>
+            <div id="r-mode-badge"></div>
+            <div id="r-stats" style="margin-top:.35rem;font-size:.8rem;"></div>
+        </div>
+        <div id="mode-seats">
+            <div id="releve-banner" style="margin-bottom:.8rem;background:rgba(0,0,0,.3);border:1px solid rgba(212,175,55,.2);border-radius:8px;padding:.65rem 1rem;display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;">
+                <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.85rem;font-weight:600;color:var(--lgold);">
+                    <input type="checkbox" id="releve-check" style="width:1.1rem;height:1.1rem;cursor:pointer;accent-color:#D4AF37;" onchange="onReleveCheck(this.checked)">
+                    Relevé effectué ?
+                </label>
+                <input type="date" id="releve-date" style="background:rgba(255,255,255,.08);border:1px solid rgba(212,175,55,.3);border-radius:5px;color:var(--cream);padding:.25rem .55rem;font-family:'Outfit',sans-serif;font-size:.82rem;cursor:pointer;">
+                <button class="validate-btn" id="releve-save-btn" onclick="saveReleve()" style="display:none">💾 Enregistrer le relevé</button>
+                <span id="releve-saved-label" style="font-size:.78rem;color:rgba(244,228,188,.5);font-style:italic;"></span>
+            </div>
+            <div class="plan-wrap"><div class="grid-main" id="grid-main"></div></div>
+            <div class="screen-wrap"><div class="screen-bar">É C R A N</div></div>
+            <div class="legend">
+                <div class="leg-item"><div class="leg-dot ok"></div><span class="leg-txt">OK</span></div>
+                <div class="leg-sep"></div>
+                <div style="font-size:.68rem;color:var(--lgold);align-self:center;letter-spacing:1px;text-transform:uppercase;opacity:.7">Remplacement ↓</div>
+                <div class="leg-item"><div class="leg-dot ar"></div><span class="leg-txt">Acoudoir</span></div>
+                <div class="leg-item"><div class="leg-dot se"></div><span class="leg-txt">Assise</span></div>
+                <div class="leg-item"><div class="leg-dot ba"></div><span class="leg-txt">Dossier</span></div>
+                <div class="leg-item"><div class="leg-dot pi"></div><span class="leg-txt">Pied</span></div>
+                <div class="leg-item"><div class="leg-dot pa"></div><span class="leg-txt">Patère</span></div>
+                <div class="leg-sep"></div>
+                <div style="font-size:.68rem;color:#C4B5FD;align-self:center;letter-spacing:1px;text-transform:uppercase;opacity:.8">Réhoussage ↓</div>
+                <div class="leg-item"><div class="leg-dot ard"></div><span class="leg-txt">Acoudoir ↺</span></div>
+                <div class="leg-item"><div class="leg-dot sed"></div><span class="leg-txt">Assise ↺</span></div>
+                <div class="leg-item"><div class="leg-dot bad"></div><span class="leg-txt">Dossier ↺</span></div>
+            </div>
+        </div>
+        <div id="mode-son" style="display:none"><div class="checklist" id="checklist-son"></div></div>
+        <div id="mode-secu" style="display:none"><div class="checklist" id="checklist-secu"></div></div>
+    </div>
+</div>
+
+<!-- MODAL SIÈGE -->
+<div class="modal" id="modal">
+    <div class="mbox">
+        <div class="mclose"><button class="mclose-btn" onclick="closeModal()">✕</button></div>
+        <div class="mtitle" id="m-title">Fauteuil</div>
+        <div class="mopts">
+            <button class="mopt" data-v="none">✓ Aucun problème</button>
+            <div class="mgroup-title">🔧 À remplacer</div>
+            <button class="mopt" data-v="armrest">Acoudoir cassé</button>
+            <button class="mopt" data-v="seat">Assise défectueuse</button>
+            <button class="mopt" data-v="back">Dossier à changer</button>
+            <button class="mopt" data-v="pied">Pied de fauteuil cassé</button>
+            <button class="mopt ice-only" data-v="patere" style="display:none">Patère (ICE)</button>
+            <div class="mgroup-title">🧵 Décousu → Réhoussage</div>
+            <button class="mopt rehousse-opt" data-v="armrest_dec">Acoudoir décousu</button>
+            <button class="mopt rehousse-opt" data-v="seat_dec">Assise décousue</button>
+            <button class="mopt rehousse-opt" data-v="back_dec">Dossier décousu</button>
+        </div>
+        <div class="mhint">Cliquez sur une option pour l'enregistrer immédiatement</div>
+    </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   CONFIG
+═══════════════════════════════════════ */
+const ROOM_NAMES={1:'Salle 1',2:'Salle 2',3:'Salle 3',4:'Salle 4',5:'Salle 5',6:'Salle 6',7:'Salle 7',8:'Salle 8',9:'Salle 9',10:'Salle 10',11:'Salle ICE'};
+const ICE_ROOM=11;
+
+const STOCK_REGULAR=[
+    {key:'s_ar',label:'Acoudoirs'},{key:'s_se',label:'Assises'},
+    {key:'s_ba',label:'Dossiers'},{key:'s_pi',label:'Pieds'},
+];
+const STOCK_ICE=[
+    {key:'s_ice_ar',label:'Acoudoirs ICE'},{key:'s_ice_se',label:'Assises ICE'},
+    {key:'s_ice_ba',label:'Dossiers ICE'},{key:'s_ice_pi',label:'Pieds ICE'},
+    {key:'s_ice_pa',label:'Patères ICE'},
+];
+const STOCK_KEY_REG={armrest:'s_ar',seat:'s_se',back:'s_ba',pied:'s_pi'};
+const STOCK_KEY_ICE={armrest:'s_ice_ar',seat:'s_ice_se',back:'s_ice_ba',pied:'s_ice_pi',patere:'s_ice_pa'};
+const STOCK_DUO=[
+    {key:'s_duo_se', label:'Assises DUO (rempl.)'},
+    {key:'s_duo_ba', label:'Dossiers DUO (rempl.)'},
+];
+const REPLACE_TYPES=['armrest','seat','back','pied','patere'];
+const REHOUSSE_TYPES=['armrest_dec','seat_dec','back_dec'];
+const TYPE_LABELS={
+    armrest:'Acoudoirs',seat:'Assises',back:'Dossiers',pied:'Pieds de Fauteuils',patere:'Patères (ICE)',
+    armrest_dec:'Acoudoirs décousus',seat_dec:'Assises décousues',back_dec:'Dossiers décousus',
+};
+
+// Priorité : 1=critique, 2=urgent, 3=modéré, 4=bas
+const TYPE_PRIORITY={seat:1,pied:1,armrest:2,patere:2,back:3,armrest_dec:4,seat_dec:4,back_dec:4};
+
+const SON_ITEMS=[
+    {cat:'Son',items:['Système sonore 5.1 / Dolby Atmos','Caisson de basses','Haut-parleurs avant gauche/droit','Haut-parleurs arrière','Amplificateurs']},
+    {cat:'Image',items:['Projecteur principal','Lampe projecteur (durée de vie)','Objectif / Focale','Écran de projection','Calibration colorimétrique']},
+    {cat:'Cabine',items:['Serveur numérique (TMS)','Lecteur DCP','Connexion réseau cabine','Climatisation cabine','Éclairage cabine']},
+];
+const SECU_ITEMS=[
+    {cat:'Issues de secours',items:['Signalétique lumineuse sortie de secours','Ouverture portes de secours','Balisage au sol','Dégagement allées']},
+    {cat:'Incendie',items:['Extincteurs (présence et validité)','Détecteurs fumée','Déclencheur alarme manuel','Système sprinkler']},
+    {cat:'Éclairage sécurité',items:['Blocs autonomes de sécurité (BAS)','Éclairage de sécurité allées','Test autonomie blocs']},
+    {cat:'Divers',items:['Caméras de surveillance','Interphone','Trousse de premiers secours','Affichage consignes sécurité']},
+];
+
+/* ═══════════════════════════════════════
+   PLANS DE SALLES
+   Grille : 32 colonnes (idx 0-31)
+   row.aisles surcharge ROOM_AISLES pour cette rangée si défini
+   Cellule 'duo' = fauteuil double (2 assises/dossiers, 1 acoudoir/pied)
+═══════════════════════════════════════ */
+function fill(a,s,n,st){for(let i=0;i<n;i++)a[s+i]=st+i;}
+function fillRev(a,s,n,mx){for(let i=0;i<n;i++)a[s+i]=mx-i;}  // numéros décroissants (ICE)
+function duo(c,c1,c2){c[c1]='duo';c[c2]=null;}                  // pose un fauteuil DUO
+function mkrow(l,c,ai){return{label:l,cells:c,aisles:ai};}
+function mkrowNA(l,c){return{label:l,cells:c,aisles:[]};}
+
+const ROOM_AISLES={
+    1:[6,23],
+    2:[7,23],
+    3:[7,23],
+    4:[9,23],5:[9,23],6:[9,23],7:[9,23],
+    8:[7,25],9:[7,25],
+    10:[7,25],11:[7,25]
+};
+
+/* ═══ SALLES — PLANS AVEC DUOS ═══════════════════════════════════════════ */
+
+/* ── Salle 1 ────────────────────────────
+   Allées cols 6 et 23 | A:32 | B-D:6+16+6 | E-L:6+16+3 | M:PMR | N-R:6+16+3
+──────────────────────────────────────── */
+function buildSalle1(){
+    const rows=[];
+    {const c=new Array(32).fill(null);fill(c,0,32,1);rows.push(mkrow('A',c,null));}
+    for(const l of['B','C','D']){
+        const c=new Array(32).fill(null);fill(c,0,6,1);fill(c,7,16,7);fill(c,24,6,23);
+        if(l==='C'){duo(c,4,5);duo(c,24,25);duo(c,9,10);duo(c,14,15);duo(c,19,20);}
+        if(l==='D'){duo(c,2,3);duo(c,10,11);duo(c,18,19);}
+        rows.push(mkrow(l,c,null));
+    }
+    for(const l of['E','F','G','H','I','J','K','L']){
+        const c=new Array(32).fill(null);fill(c,0,6,1);fill(c,7,16,7);fill(c,24,3,23);
+        if(l==='E'){duo(c,4,5);duo(c,14,15);}
+        if(l==='F'){duo(c,2,3);duo(c,10,11);duo(c,18,19);}
+        if(l==='G'){duo(c,4,5);duo(c,9,10);duo(c,14,15);duo(c,19,20);}
+        if(l==='H'){duo(c,2,3);duo(c,7,8);duo(c,14,15);duo(c,16,17);duo(c,21,22);}
+        if(l==='I'){duo(c,4,5);duo(c,9,10);duo(c,14,15);duo(c,19,20);}
+        if(l==='J'){duo(c,10,11);duo(c,18,19);}
+        if(l==='K'){duo(c,12,13);duo(c,16,17);}
+        rows.push(mkrow(l,c,null));
+    }
+    {const c=new Array(32).fill(null);fill(c,0,6,1);for(let i=7;i<=12;i++)c[i]='pmr';fill(c,13,4,7);for(let i=17;i<=22;i++)c[i]='pmr';fill(c,24,3,11);rows.push(mkrow('M',c,null));}
+    rows.push(mkrow('_',new Array(32).fill(null),[]));
+    for(const l of['N','O','P','Q','R']){const c=new Array(32).fill(null);fill(c,0,6,1);fill(c,7,16,7);fill(c,24,3,23);rows.push(mkrow(l,c,null));}
+    return rows;
+}
+
+/* ── Salle 2 ────────────────────────────
+   Allées cols 7 et 23 | A:25 | B-K:3+15+3 | L:PMR | M-Q:3+15+3
+──────────────────────────────────────── */
+function buildSalle2(){
+    const rows=[];
+    {const c=new Array(32).fill(null);fill(c,3,25,1);rows.push(mkrow('A',c,null));}
+    for(const l of['B','C','D','E','F','G','H','I','J','K']){
+        const c=new Array(32).fill(null);fill(c,4,3,1);fill(c,8,15,4);fill(c,24,3,19);
+        if(l==='C'){duo(c,10,11);duo(c,19,20);}
+        if(l==='D'){duo(c,12,13);duo(c,17,18);}
+        if(l==='E'){duo(c,15,16);}
+        if(l==='F'){duo(c,12,13);duo(c,17,18);}
+        if(l==='G'){duo(c,10,11);duo(c,19,20);}
+        if(l==='H'){duo(c,8,9);duo(c,21,22);}
+        if(l==='I'){duo(c,10,11);duo(c,19,20);}
+        if(l==='J'){duo(c,13,14);duo(c,15,16);}
+        rows.push(mkrow(l,c,null));
+    }
+    {const c=new Array(32).fill(null);fill(c,4,3,1);for(let i=8;i<=11;i++)c[i]='pmr';c[12]='pmr';fill(c,13,4,4);for(let i=17;i<=22;i++)c[i]='pmr';fill(c,24,3,8);rows.push(mkrow('L',c,null));}
+    rows.push(mkrow('_',new Array(32).fill(null),[]));
+    for(const l of['M','N','O','P','Q']){
+        const c=new Array(32).fill(null);fill(c,4,3,1);fill(c,8,15,4);fill(c,24,3,19);
+        if(l==='N'){duo(c,8,9);duo(c,14,15);duo(c,21,22);}
+        if(l==='O'){duo(c,10,11);duo(c,19,20);}
+        if(l==='P'){duo(c,12,13);duo(c,17,18);}
+        rows.push(mkrow(l,c,null));
+    }
+    return rows;
+}
+
+/* ── Salle 3 ────────────────────────────
+   Allées cols 7 et 23 | A:17 sans allée | B-F:15 | G:PMR | H-M:3+13+3
+──────────────────────────────────────── */
+function buildSalle3(){
+    const rows=[];
+    {const c=new Array(32).fill(null);fill(c,7,17,1);rows.push(mkrow('A',c,[]));}
+    for(const l of['B','C','D','E','F']){
+        const c=new Array(32).fill(null);fill(c,8,15,1);
+        if(l==='B'){duo(c,12,13);duo(c,17,18);}
+        if(l==='C'){duo(c,10,11);duo(c,19,20);}
+        if(l==='D'){duo(c,8,9);duo(c,21,22);}
+        if(l==='E'){duo(c,12,13);duo(c,17,18);}
+        rows.push(mkrow(l,c,null));
+    }
+    {const c=new Array(32).fill(null);fill(c,8,3,1);for(let i=11;i<=19;i++)c[i]='pmr';fill(c,20,3,4);rows.push(mkrow('G',c,null));}
+    rows.push(mkrow('_',new Array(32).fill(null),[]));
+    // H-M : 3+allée+13+allée+3 (cols 4-6 | 7 | 8-20 | 23 | 24-26)
+    for(const l of['H','I','J','K','L','M']){
+        const c=new Array(32).fill(null);fill(c,4,3,1);fill(c,8,13,4);fill(c,24,3,17);
+        if(l==='I'){duo(c,13,14);}
+        if(l==='J'){duo(c,8,9);duo(c,19,20);}
+        if(l==='K'){duo(c,10,11);duo(c,17,18);}
+        if(l==='L'){duo(c,12,13);duo(c,15,16);}
+        rows.push(mkrow(l,c,null));
+    }
+    return rows;
+}
+
+/* ── Salles 4-7 (fonctions séparées pour DUOs) ───────────────────────────────
+   Allées cols 9 et 23 | A:9 centrés (cols 12-20) | B:PMR centrés | C-H:13 (cols 10-22)
+──────────────────────────────────────── */
+function buildSalle4(){
+    const rows=[];
+    {const c=new Array(32).fill(null);fill(c,12,9,1);rows.push(mkrow('A',c,null));}
+    {const c=new Array(32).fill(null);c[12]='pmr';c[13]='pmr';c[14]=1;c[15]='pmr';c[16]='pmr';c[17]='pmr';c[18]=2;c[19]='pmr';c[20]='pmr';rows.push(mkrow('B',c,null));}
+    rows.push(mkrow('_',new Array(32).fill(null),[]));
+    for(const l of['C','D','E','F','G','H']){
+        const c=new Array(32).fill(null);fill(c,10,13,1);
+        if(l==='D'){duo(c,12,13);duo(c,19,20);}
+        if(l==='E'){duo(c,10,11);duo(c,21,22);}
+        if(l==='F'){duo(c,12,13);duo(c,19,20);}
+        rows.push(mkrow(l,c,null));
+    }
+    return rows;
+}
+function buildSalle5(){
+    const rows=[];
+    {const c=new Array(32).fill(null);fill(c,12,9,1);rows.push(mkrow('A',c,null));}
+    {const c=new Array(32).fill(null);c[12]='pmr';c[13]='pmr';c[14]=1;c[15]='pmr';c[16]='pmr';c[17]='pmr';c[18]=2;c[19]='pmr';c[20]='pmr';rows.push(mkrow('B',c,null));}
+    rows.push(mkrow('_',new Array(32).fill(null),[]));
+    for(const l of['C','D','E','F','G','H']){
+        const c=new Array(32).fill(null);fill(c,10,13,1);
+        if(l==='D'){duo(c,14,15);duo(c,17,18);}
+        if(l==='E'){duo(c,12,13);duo(c,19,20);}
+        if(l==='F'){duo(c,10,11);duo(c,21,22);}
+        rows.push(mkrow(l,c,null));
+    }
+    return rows;
+}
+function buildSalle6(){
+    const rows=[];
+    {const c=new Array(32).fill(null);fill(c,12,9,1);duo(c,12,13);duo(c,19,20);rows.push(mkrow('A',c,null));}
+    {const c=new Array(32).fill(null);c[12]='pmr';c[13]='pmr';c[14]=1;c[15]='pmr';c[16]='pmr';c[17]='pmr';c[18]=2;c[19]='pmr';c[20]='pmr';rows.push(mkrow('B',c,null));}
+    rows.push(mkrow('_',new Array(32).fill(null),[]));
+    for(const l of['C','D','E','F','G','H']){
+        const c=new Array(32).fill(null);fill(c,10,13,1);
+        if(l==='D'){duo(c,10,11);duo(c,21,22);}
+        if(l==='F'){duo(c,12,13);duo(c,19,20);}
+        rows.push(mkrow(l,c,null));
+    }
+    return rows;
+}
+function buildSalle7(){
+    const rows=[];
+    {const c=new Array(32).fill(null);fill(c,12,9,1);rows.push(mkrow('A',c,null));}
+    {const c=new Array(32).fill(null);c[12]='pmr';c[13]='pmr';c[14]=1;c[15]='pmr';c[16]='pmr';c[17]='pmr';c[18]=2;c[19]='pmr';c[20]='pmr';rows.push(mkrow('B',c,null));}
+    rows.push(mkrow('_',new Array(32).fill(null),[]));
+    for(const l of['C','D','E','F','G','H']){
+        const c=new Array(32).fill(null);fill(c,10,13,1);
+        if(l==='C'){duo(c,15,16);}
+        if(l==='D'){duo(c,10,11);duo(c,21,22);}
+        if(l==='E'){duo(c,12,13);duo(c,19,20);}
+        if(l==='F'){duo(c,17,18);}
+        rows.push(mkrow(l,c,null));
+    }
+    return rows;
+}
+
+/* ── Salles 8-9 (fonctions séparées) ───────────────────────────────────────
+   Allées cols 7 et 25 | A:12 (cols 10-21) | B:10 (cols 11-20)
+   C:2PMR+5+3PMR | D-I:16 (cols 8-23)
+──────────────────────────────────────── */
+function buildSalle8(){
+    const rows=[];
+    {const c=new Array(32).fill(null);fill(c,10,12,1);rows.push(mkrow('A',c,null));}
+    {const c=new Array(32).fill(null);fill(c,11,10,1);duo(c,15,16);rows.push(mkrow('B',c,null));}
+    {const c=new Array(32).fill(null);c[11]='pmr';c[12]='pmr';fill(c,13,5,1);c[18]='pmr';c[19]='pmr';c[20]='pmr';rows.push(mkrow('C',c,null));}
+    rows.push(mkrow('_',new Array(32).fill(null),[]));
+    for(const l of['D','E','F','G','H','I']){
+        const c=new Array(32).fill(null);fill(c,8,16,1);
+        if(l==='E'){duo(c,8,9);duo(c,22,23);}
+        if(l==='F'){duo(c,10,11);duo(c,20,21);}
+        if(l==='G'){duo(c,12,13);duo(c,18,19);}
+        if(l==='H'){duo(c,8,9);duo(c,22,23);}
+        rows.push(mkrow(l,c,null));
+    }
+    return rows;
+}
+function buildSalle9(){
+    const rows=[];
+    {const c=new Array(32).fill(null);fill(c,10,12,1);duo(c,12,13);duo(c,18,19);rows.push(mkrow('A',c,null));}
+    {const c=new Array(32).fill(null);fill(c,11,10,1);rows.push(mkrow('B',c,null));}
+    {const c=new Array(32).fill(null);c[11]='pmr';c[12]='pmr';fill(c,13,5,1);c[18]='pmr';c[19]='pmr';c[20]='pmr';rows.push(mkrow('C',c,null));}
+    rows.push(mkrow('_',new Array(32).fill(null),[]));
+    for(const l of['D','E','F','G','H','I']){
+        const c=new Array(32).fill(null);fill(c,8,16,1);
+        if(l==='E'){duo(c,15,16);}
+        if(l==='F'){duo(c,12,13);duo(c,18,19);}
+        if(l==='G'){duo(c,10,11);duo(c,20,21);}
+        if(l==='H'){duo(c,8,9);duo(c,22,23);}
+        rows.push(mkrow(l,c,null));
+    }
+    return rows;
+}
+
+/* ── Salle 10 ───────────────────────────
+   Allées cols 7 et 25 | A:9 (cols 10-18) | B:7 (cols 11-17)
+   C:2PMR+1+1PMR+1+2PMR (cols 11-17) | D-I:13 (cols 8-20)
+──────────────────────────────────────── */
+function buildSalle10(){
+    const rows=[];
+    {const c=new Array(32).fill(null);fill(c,10,9,1);rows.push(mkrow('A',c,null));}
+    {const c=new Array(32).fill(null);fill(c,11,7,1);duo(c,14,15);rows.push(mkrow('B',c,null));}
+    // C : 2PMR(11-12) + 1siège(13) + 1PMR(14) + 1siège(15) + 2PMR(16-17)
+    {const c=new Array(32).fill(null);c[11]='pmr';c[12]='pmr';c[13]=1;c[14]='pmr';c[15]=2;c[16]='pmr';c[17]='pmr';rows.push(mkrow('C',c,null));}
+    rows.push(mkrow('_',new Array(32).fill(null),[]));
+    for(const l of['D','E','F','G','H','I']){
+        const c=new Array(32).fill(null);fill(c,8,13,1);
+        if(l==='E'){duo(c,8,9);duo(c,19,20);}
+        if(l==='F'){duo(c,10,11);duo(c,17,18);}
+        if(l==='G'){duo(c,13,14);}
+        rows.push(mkrow(l,c,null));
+    }
+    return rows;
+}
+
+/* ── Salle ICE (11) ─────────────────────
+   Numérotation INVERSÉE : 16→1 pour A/B/D-I
+   Allées cols 7 et 25
+   A : 16 sièges sans allée (cols 8-23, 16→1)
+   B : 14 sièges décalés (cols 10-23, 14→1)
+   C : 2 + 2PMR + 3 + 1PMR + 2 (cols 11-20, numéros croissants)
+   D-I : 16 sièges (cols 8-23, 16→1)
+──────────────────────────────────────── */
+function buildSalleICE(){
+    const rows=[];
+    // A : 16 sièges inversés, pas d'allée
+    {const c=new Array(32).fill(null);fillRev(c,8,16,16);duo(c,12,13);duo(c,18,19);rows.push(mkrow('A',c,[]));}
+    // B : 14 sièges inversés
+    {const c=new Array(32).fill(null);fillRev(c,10,14,14);duo(c,16,17);rows.push(mkrow('B',c,null));}
+    // C : 2+2PMR+3+1PMR+2
+    {const c=new Array(32).fill(null);c[11]=1;c[12]=2;c[13]='pmr';c[14]='pmr';c[15]=3;c[16]=4;c[17]=5;c[18]='pmr';c[19]=6;c[20]=7;rows.push(mkrow('C',c,null));}
+    rows.push(mkrow('_',new Array(32).fill(null),[]));
+    // D-I : 16 sièges inversés
+    for(const l of['D','E','F','G','H','I']){
+        const c=new Array(32).fill(null);fillRev(c,8,16,16);
+        if(l==='D'){duo(c,13,14);duo(c,17,18);}
+        if(l==='E'){duo(c,10,11);duo(c,20,21);}
+        rows.push(mkrow(l,c,null));
+    }
+    return rows;
+}
+
+function makeSimple(nbRows,nbSeats){
+    return Array.from({length:nbRows},(_,i)=>{
+        const c=new Array(32).fill(null);
+        for(let s=0;s<nbSeats;s++)c[s]=s+1;
+        return mkrow(String.fromCharCode(65+i),c,null);
+    });
+}
+
+const ROOMS={
+    1:buildSalle1(),
+    2:buildSalle2(),
+    3:buildSalle3(),
+    4:buildSalle4(), 5:buildSalle5(), 6:buildSalle6(), 7:buildSalle7(),
+    8:buildSalle8(), 9:buildSalle9(),
+    10:buildSalle10(),
+    11:buildSalleICE()
+};
+
+/* ═══════════════════════════════════════
+   ÉTAT
+═══════════════════════════════════════ */
+let currentRoom=null,currentSeat=null,currentMode='seats';
+let alertDismissed=false;
+let currentRapportType='son';
+let data={};
+
+function init(){
+    const raw=localStorage.getItem('cinema_pro3');
+    data=raw?JSON.parse(raw):{};
+    for(let r=1;r<=11;r++)if(!data[r])data[r]={};
+    if(!data.stock)data.stock={};
+    if(!data.checks)data.checks={};
+    if(!data.dates)data.dates={};
+    // Poids palette par défaut (kg/pièce) — éditables dans le bon de commande
+    const POIDS_DEFAUT={
+        poids_seat:4.5, poids_back:7.7, poids_armrest:1.9, poids_pied:7.2,
+        poids_ice_seat:3.9, poids_ice_back:11.6, poids_ice_armrest:0.6, poids_ice_pied:20,
+        poids_seat_dec:4.5, poids_back_dec:7.7, poids_armrest_dec:1.9
+    };
+    Object.entries(POIDS_DEFAUT).forEach(([k,v])=>{if(!data.stock[k])data.stock[k]=v;});
+    buildStockUI();
+    renderDash();
+}
+function persist(){localStorage.setItem('cinema_pro3',JSON.stringify(data));}
+function fmtDate(ts){
+    if(!ts)return null;
+    return new Date(ts).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+// Retourne l'âge en semaines
+function weekAge(ts){
+    if(!ts)return null;
+    return (Date.now()-ts)/(1000*60*60*24*7);
+}
+// Classe CSS selon l'âge en semaines — premium=true pour salle ICE (rouge dès S+1)
+function dateClass(ts,premium){
+    const w=weekAge(ts);
+    if(w===null)return'';
+    if(premium){
+        if(w<1)return'recent';
+        if(w<2)return'old-2';   // ICE : rouge dès S+1
+        return'old-3';           // ICE : alerte dès S+2
+    }
+    if(w<1)return'recent';
+    if(w<2)return'old-1';
+    if(w<3)return'old-2';
+    return'old-3';
+}
+// Seuil d'alerte en semaines selon salle (ICE = 1, autres = 3)
+function alertThreshold(r){return r===ICE_ROOM?1:3;}
+
+/* ═══════════════════════════════════════
+   NAV PAGES
+═══════════════════════════════════════ */
+function showPage(id){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+    document.getElementById('page-'+id).classList.add('active');
+    document.getElementById('room-view').style.display='none';
+    const tabs=document.querySelectorAll('.nav-tab');
+    if(id==='dashboard'){tabs[0].classList.add('active');renderDash();}
+    else if(id==='order'){tabs[1].classList.add('active');refreshOrder();}
+    else if(id==='rapport'){tabs[2].classList.add('active');refreshRapport();}
+}
+
+/* ═══════════════════════════════════════
+   STOCKS
+═══════════════════════════════════════ */
+function buildStockUI(){
+    const reg=document.getElementById('stock-regular');
+    const ice=document.getElementById('stock-ice');
+    const duo=document.getElementById('stock-duo');
+    reg.innerHTML='';ice.innerHTML='';duo.innerHTML='';
+    STOCK_REGULAR.forEach(s=>reg.appendChild(mkStockCard(s.key,s.label,false,false)));
+    STOCK_ICE.forEach(s=>ice.appendChild(mkStockCard(s.key,s.label,true,false)));
+    STOCK_DUO.forEach(s=>duo.appendChild(mkStockCard(s.key,s.label,false,true)));
+}
+function mkStockCard(key,label,isIce,isDuo){
+    const d=document.createElement('div');
+    d.className='stat-card'+(isIce?' ice':isDuo?' duo':'');
+    d.innerHTML=`<div class="slabel">${label}</div><div class="sval" id="sv_${key}">${data.stock[key]||0}</div><input class="stock-input" type="number" min="0" value="${data.stock[key]||0}" oninput="updateStock('${key}',this.value)">`;
+    return d;
+}
+function updateStock(key,val){
+    data.stock[key]=parseInt(val)||0;
+    const sv=document.getElementById('sv_'+key);
+    if(sv)sv.textContent=data.stock[key];
+    persist();
+}
+function updatePoids(type,val){
+    data.stock['poids_'+type]=parseFloat(val)||0;
+    persist();
+    // Rafraîchir le bon de commande si actif
+    if(document.getElementById('page-order').classList.contains('active'))refreshOrder();
+}
+
+/* ═══════════════════════════════════════
+   DASHBOARD + URGENCES
+═══════════════════════════════════════ */
+function countIssues(r){
+    const c={};
+    [...REPLACE_TYPES,...REHOUSSE_TYPES].forEach(t=>c[t]=0);
+    c.total=0;
+    Object.entries(data[r]||{}).forEach(([sid,v])=>{
+        if(!v||v==='none'||c[v]===undefined)return;
+        // DUO : assise et dossier comptent double
+        const isDuo=sid.includes('duo');
+        const mult=(isDuo&&(v==='seat'||v==='back'||v==='seat_dec'||v==='back_dec'))?2:1;
+        c[v]+=mult; c.total+=mult;
+    });
+    return c;
+}
+
+function getRoomPriority(roomId){
+    // Priorité max parmi tous les problèmes + âge du relevé
+    const c=countIssues(roomId);
+    if(c.total===0)return 0;
+    let maxP=4;
+    [...REPLACE_TYPES,...REHOUSSE_TYPES].forEach(t=>{
+        if(c[t]>0&&TYPE_PRIORITY[t]<maxP)maxP=TYPE_PRIORITY[t];
+    });
+    // Age : si relevé > seuil (7j standard, 7j ICE) et problème → upgrade priorité
+    const ts=data.dates[roomId]?.seats;
+    if(ts&&maxP<4){
+        const days=(Date.now()-ts)/(1000*60*60*24);
+        const threshold=roomId===ICE_ROOM?1:7; // ICE : dès 1 jour !
+        if(days>threshold&&maxP>1)maxP--;
+    }
+    return maxP;
+}
+
+function prioLabel(p){return p===1?'CRITIQUE':p===2?'URGENT':p===3?'MODÉRÉ':'BAS';}
+function prioClass(p){return p===1?'prio-crit':p===2?'prio-high':p===3?'prio-med':'prio-low';}
+
+function updateAlertBanner(){
+    if(alertDismissed){document.getElementById('alert-banner').classList.remove('visible');return;}
+    const parts=[];
+
+    // Problèmes critiques
+    const critRooms=[];
+    for(let r=1;r<=11;r++){if(getRoomPriority(r)===1)critRooms.push(ROOM_NAMES[r]);}
+    if(critRooms.length)parts.push(`🚨 <strong>Critiques</strong> : ${critRooms.join(', ')}`);
+
+    // Relevés expirés (seuil selon salle : ICE=S+1, autres=S+3)
+    const oldR=[];
+    for(let r=1;r<=11;r++){
+        const w=weekAge(data.dates[r]?.seats);
+        if(w!==null&&w>=alertThreshold(r))oldR.push(ROOM_NAMES[r]);
+    }
+    if(oldR.length)parts.push(`⏰ <strong>Relevé expiré</strong> : ${oldR.join(', ')}`);
+
+    // Vérif expirées (seuil selon salle)
+    const noSon=[],noSecu=[];
+    for(let r=1;r<=11;r++){
+        const wSon=weekAge(data.dates[r]?.son);
+        const wSecu=weekAge(data.dates[r]?.secu);
+        if(wSon!==null&&wSon>=alertThreshold(r))noSon.push(ROOM_NAMES[r]);
+        if(wSecu!==null&&wSecu>=alertThreshold(r))noSecu.push(ROOM_NAMES[r]);
+    }
+    if(noSon.length) parts.push(`🔊 <strong>Son > S+3</strong> : ${noSon.join(', ')}`);
+    if(noSecu.length)parts.push(`🛡️ <strong>Sécu > S+3</strong> : ${noSecu.join(', ')}`);
+
+    const banner=document.getElementById('alert-banner');
+    if(parts.length){
+        document.getElementById('alert-text').innerHTML=parts.join(' &nbsp;|&nbsp; ');
+        banner.classList.add('visible');
+    } else {
+        banner.classList.remove('visible');
+    }
+}
+function dismissAlert(){alertDismissed=true;document.getElementById('alert-banner').classList.remove('visible');}
+
+function updateTotals(){
+    let ar=0,se=0,ba=0,pi=0,pa=0,ard=0,sed=0,bad=0;
+    for(let r=1;r<=11;r++){
+        const c=countIssues(r);
+        ar+=c.armrest;se+=c.seat;ba+=c.back;pi+=c.pied;pa+=c.patere;
+        ard+=c.armrest_dec;sed+=c.seat_dec;bad+=c.back_dec;
+    }
+    document.getElementById('tot-ar').textContent=ar;
+    document.getElementById('tot-se').textContent=se;
+    document.getElementById('tot-ba').textContent=ba;
+    document.getElementById('tot-pi').textContent=pi;
+    document.getElementById('tot-pa').textContent=pa;
+    document.getElementById('tot-ard').textContent=ard;
+    document.getElementById('tot-sed').textContent=sed;
+    document.getElementById('tot-bad').textContent=bad;
+}
+
+function renderDash(){
+    const g=document.getElementById('rooms-grid');
+    g.innerHTML='';
+    for(let i=1;i<=11;i++){
+        const c=countIssues(i);
+        const isIce=(i===ICE_ROOM);
+        const prio=getRoomPriority(i);
+        const ts=data.dates[i]?.seats;
+        const tsStr=fmtDate(ts);
+        const dc=dateClass(ts,isIce);   // ICE premium : rouge dès S+1
+
+        const replBadges=
+            (c.armrest>0?`<span class="ic">🔸${c.armrest}</span>`:'')+
+            (c.seat>0?`<span class="ic">💺${c.seat}</span>`:'')+
+            (c.back>0?`<span class="ic">🔙${c.back}</span>`:'')+
+            (c.pied>0?`<span class="ic">🦵${c.pied}</span>`:'')+
+            (c.patere>0?`<span class="ic">🪝${c.patere}</span>`:'');
+        const rhBadges=
+            (c.armrest_dec>0?`<span class="ic rh">🧵${c.armrest_dec}</span>`:'')+
+            (c.seat_dec>0?`<span class="ic rh">🧵${c.seat_dec}</span>`:'')+
+            (c.back_dec>0?`<span class="ic rh">🧵${c.back_dec}</span>`:'');
+
+        // Badge = nombre total d'anomalies (coloré selon priorité)
+        const prioBadge=c.total>0?`<div class="priority-badge ${prioClass(prio)}" title="${prioLabel(prio)}">${c.total}</div>`:'';
+        const okBadge=c.total===0?`<span class="ok-badge">✔ OK</span>`:'';
+        const issuesLine=c.total>0?(replBadges+rhBadges):'';
+
+        const d=document.createElement('div');
+        d.className='rcard'+(isIce?' ice':'');
+        d.innerHTML=`
+            ${prioBadge}
+            <div class="rnum">${ROOM_NAMES[i]}</div>
+            ${okBadge}
+            <div class="rissues">${issuesLine}</div>
+            <div class="rdate ${dc}">${tsStr?'Relevé : '+tsStr:'Aucun relevé'}</div>
+            <div class="room-btns">
+                <button class="room-btn btn-seats" onclick="openRoom(${i},'seats')">💺 Fauteuils</button>
+                <button class="room-btn btn-son"   onclick="openRoom(${i},'son')">🔊 Son & Image</button>
+                <button class="room-btn btn-secu"  onclick="openRoom(${i},'secu')">🛡️ Sécurité</button>
+            </div>`;
+        g.appendChild(d);
+    }
+    updateTotals();
+    updateAlertBanner();
+}
+
+/* ═══════════════════════════════════════
+   ROOM VIEW
+═══════════════════════════════════════ */
+function openRoom(n,mode){
+    currentRoom=n;currentMode=mode;
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+    document.getElementById('room-view').style.display='block';
+    document.getElementById('r-title').textContent=ROOM_NAMES[n];
+    const badge=document.getElementById('r-mode-badge');
+    if(mode==='seats')badge.innerHTML='<span class="rmode-badge badge-seats">💺 Parc Fauteuils</span>';
+    else if(mode==='son')badge.innerHTML='<span class="rmode-badge badge-son">🔊 Vérif Son & Image</span>';
+    else badge.innerHTML='<span class="rmode-badge badge-secu">🛡️ Vérif Sécurité</span>';
+    document.getElementById('mode-seats').style.display=mode==='seats'?'block':'none';
+    document.getElementById('mode-son').style.display=mode==='son'?'block':'none';
+    document.getElementById('mode-secu').style.display=mode==='secu'?'block':'none';
+    document.querySelectorAll('.ice-only').forEach(b=>b.style.display=(n===ICE_ROOM)?'block':'none');
+    if(mode==='seats'){
+        renderPlan(n);refreshRoomStats(n);
+        // Init bandeau relevé (action manuelle uniquement)
+        const ts=data.dates[n]?.seats;
+        const today=new Date().toISOString().slice(0,10);
+        const chk=document.getElementById('releve-check');
+        const inp=document.getElementById('releve-date');
+        const btn=document.getElementById('releve-save-btn');
+        const savedLbl=document.getElementById('releve-saved-label');
+        chk.checked=false; inp.value=today;
+        btn.style.display='none';
+        savedLbl.textContent=ts?('Dernier relevé : '+fmtDate(ts)):'Aucun relevé enregistré';
+    }
+    else if(mode==='son'){
+        renderChecklist(n,'son');
+        document.getElementById('r-stats').innerHTML='';
+    }
+    else{
+        renderChecklist(n,'secu');
+        document.getElementById('r-stats').innerHTML='';
+    }
+}
+
+function closeRoom(){
+    document.getElementById('room-view').style.display='none';
+    document.getElementById('page-dashboard').classList.add('active');
+    document.querySelectorAll('.nav-tab')[0].classList.add('active');
+    renderDash();
+}
+
+function refreshRoomStats(n){
+    const c=countIssues(n);
+    const prio=getRoomPriority(n);
+    const prioHtml=prio>0?` <span style="background:${prio===1?'#EF4444':prio===2?'#F97316':prio===3?'#EAB308':'#6B7280'};color:${prio>=3?'black':'white'};padding:.1rem .4rem;border-radius:4px;font-size:.7rem;font-weight:900">${prioLabel(prio)}</span>`:''
+    const badges=
+        (c.armrest>0?`<span class="ic">Acoudoirs:${c.armrest}</span>`:'')+
+        (c.seat>0?`<span class="ic">Assises:${c.seat}</span>`:'')+
+        (c.back>0?`<span class="ic">Dossiers:${c.back}</span>`:'')+
+        (c.pied>0?`<span class="ic">Pieds:${c.pied}</span>`:'')+
+        (c.patere>0?`<span class="ic">Patères:${c.patere}</span>`:'')+
+        (c.armrest_dec>0?`<span class="ic rh">🧵 Ac.décousus:${c.armrest_dec}</span>`:'')+
+        (c.seat_dec>0?`<span class="ic rh">🧵 As.décousues:${c.seat_dec}</span>`:'')+
+        (c.back_dec>0?`<span class="ic rh">🧵 Do.décousus:${c.back_dec}</span>`:'');
+    document.getElementById('r-stats').innerHTML=c.total===0
+        ?'<span style="color:#22C55E;font-weight:900">✔ Tous les fauteuils sont en bon état</span>'
+        :prioHtml+' '+badges;
+}
+
+/* ═══════════════════════════════════════
+   PLAN DE SALLE
+═══════════════════════════════════════ */
+function renderPlan(n){
+    const rows=ROOMS[n];
+    const grid=document.getElementById('grid-main');
+    grid.innerHTML='';
+    const roomAisles=ROOM_AISLES[n]||[];
+
+    // Calculer la plage de colonnes utilisées (pour coller le label aux fauteuils)
+    let minCol=31,maxCol=0;
+    rows.forEach(row=>{
+        if(row.label==='_')return;
+        const aisles=row.aisles!==null&&row.aisles!==undefined?row.aisles:roomAisles;
+        row.cells.forEach((cell,idx)=>{
+            if(cell!==null){minCol=Math.min(minCol,idx);maxCol=Math.max(maxCol,idx);}
+        });
+        aisles.forEach(a=>{if(a>=minCol-2&&a<=maxCol+2){minCol=Math.min(minCol,a);maxCol=Math.max(maxCol,a);}});
+    });
+    const nbCols=maxCol-minCol+1;
+    grid.style.gridTemplateColumns=`26px repeat(${nbCols},var(--cell))`;
+
+    rows.forEach(row=>{
+        const aisles=row.aisles!==null&&row.aisles!==undefined?row.aisles:roomAisles;
+        const lbl=document.createElement('div');
+        lbl.className='cell-lbl';
+        lbl.textContent=row.label==='_'?'':row.label;
+        grid.appendChild(lbl);
+        for(let idx=minCol;idx<=maxCol;idx++){
+            const cell=row.cells[idx]??null;
+            const div=document.createElement('div');
+            if(cell===null){
+                div.className=aisles.includes(idx)?'cell-aisle':'cell-empty';
+            } else if(cell==='pmr'){
+                div.className='cell-pmr';div.textContent='♿';
+            } else if(cell==='duo'){
+                const sid=row.label+'duo'+idx;
+                const issue=data[n][sid];
+                div.className='cell-duo'+(issue&&issue!=='none'?` broken-${issue}`:'');
+                div.title=`${ROOM_NAMES[n]} — DUO Rangée ${row.label} col ${idx}`;
+                div.textContent='DUO';
+                div.onclick=()=>openModal(n,sid,true);
+            } else {
+                const sid=row.label+cell;
+                const issue=data[n][sid];
+                div.className='cell-seat'+(issue&&issue!=='none'?` broken-${issue}`:'');
+                div.textContent=cell;
+                div.title=`${ROOM_NAMES[n]} — Rangée ${row.label} N°${cell}`;
+                div.onclick=()=>openModal(n,sid,false);
+            }
+            grid.appendChild(div);
+        }
+    });
+}
+
+/* ═══════════════════════════════════════
+   CHECKLISTS
+═══════════════════════════════════════ */
+function renderChecklist(n,type){
+    const items=type==='son'?SON_ITEMS:SECU_ITEMS;
+    const container=document.getElementById(type==='son'?'checklist-son':'checklist-secu');
+    container.innerHTML='';
+    const checkKey=`check_${n}_${type}`;
+    const saved=data.checks[checkKey]||{};
+    const tsKey=type==='son'?'son':'secu';
+    const ts=data.dates[n]?.[tsKey];
+    const premium=(n===ICE_ROOM);
+    const dc=dateClass(ts,premium);
+
+    // En-tête de validation manuelle
+    const header=document.createElement('div');
+    const ageTxt=ts?`Dernière vérification : <strong>${fmtDate(ts)}</strong> — <span class="${dc}">${
+        dc==='recent'?'✔ À jour':
+        dc==='old-1'?'⚠ S+1 — Bientôt à refaire':
+        dc==='old-2'?(premium?'🔴 S+1 — À faire (ICE prioritaire)':'🔴 S+2 — À refaire rapidement'):
+        (premium?'🚨 S+2 — URGENT (ICE)':'🚨 S+3 — Vérification URGENTE')
+    }</span>`:premium
+        ?`<em style="color:#FCA5A5;font-weight:600">⚠ Salle ICE — Vérification à planifier</em>`
+        :`<em style="color:rgba(244,228,188,.5)">Aucune vérification enregistrée</em>`;
+    header.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem;margin-bottom:1rem;background:rgba(0,0,0,.25);border:1px solid rgba(212,175,55,.2);border-radius:8px;padding:.75rem 1rem">
+        <div style="font-size:.82rem">${ageTxt}</div>
+        <button class="validate-btn" onclick="validateVerif(${n},'${type}')">✔ Valider la vérification aujourd'hui</button>
+    </div>`;
+    container.appendChild(header);
+
+    items.forEach(cat=>{
+        const card=document.createElement('div');card.className='check-card';
+        let html=`<div class="check-title">📌 ${cat.cat}</div>`;
+        cat.items.forEach((item,i)=>{
+            const k=`${cat.cat}_${i}`;
+            html+=`<div class="check-item">
+                <input type="checkbox" id="${checkKey}_${k}" ${saved[k]?'checked':''} onchange="saveCheck(${n},'${type}','${k}',this.checked)">
+                <label for="${checkKey}_${k}">${item}</label></div>`;
+        });
+        const noteKey=`note_${cat.cat}`;
+        html+=`<textarea class="check-note" placeholder="Notes / observations..." onchange="saveCheck(${n},'${type}','${noteKey}',this.value)">${saved[noteKey]||''}</textarea>`;
+        card.innerHTML=html;container.appendChild(card);
+    });
+}
+
+function validateVerif(n,type){
+    if(!data.dates[n])data.dates[n]={};
+    data.dates[n][type]=Date.now();
+    persist();
+    renderChecklist(n,type);
+}
+
+function onReleveCheck(checked){
+    document.getElementById('releve-save-btn').style.display=checked?'inline-flex':'none';
+}
+
+function saveReleve(){
+    const n=currentRoom;
+    const dateVal=document.getElementById('releve-date').value;
+    const ts=dateVal?new Date(dateVal).getTime():Date.now();
+    if(!data.dates[n])data.dates[n]={};
+    data.dates[n].seats=ts;
+    persist();
+    const chk=document.getElementById('releve-check');
+    const btn=document.getElementById('releve-save-btn');
+    const lbl=document.getElementById('releve-saved-label');
+    chk.checked=false;
+    btn.style.display='none';
+    lbl.textContent='Dernier relevé : '+fmtDate(ts);
+    lbl.style.color='#4ADE80';
+    setTimeout(()=>{lbl.style.color='';},2000);
+}
+
+function saveCheck(n,type,key,val){
+    const ck=`check_${n}_${type}`;
+    if(!data.checks[ck])data.checks[ck]={};
+    data.checks[ck][key]=val;
+    persist();
+}
+
+/* ═══════════════════════════════════════
+   MODAL — AUTO-SAVE
+═══════════════════════════════════════ */
+function openModal(n,sid,isDuo){
+    currentRoom=n;currentSeat=sid;
+    const cur=data[n][sid]||'none';
+    const duoNote=isDuo?` <span style="background:#F59E0B;color:#1c0a00;font-size:.65rem;font-weight:900;padding:.1rem .4rem;border-radius:4px;margin-left:.4rem">DUO</span>
+        <div style="font-size:.72rem;color:rgba(244,228,188,.6);margin-top:.2rem">Fauteuil double — assise &amp; dossier comptés ×2</div>`:''
+    document.getElementById('m-title').innerHTML=`${ROOM_NAMES[n]} — Fauteuil ${sid}${duoNote}`;
+    document.querySelectorAll('.mopt').forEach(b=>b.classList.toggle('active',b.dataset.v===cur));
+    document.querySelectorAll('.ice-only').forEach(b=>b.style.display=(n===ICE_ROOM)?'block':'none');
+    document.getElementById('modal').classList.add('active');
+}
+function closeModal(){document.getElementById('modal').classList.remove('active');}
+
+document.querySelectorAll('.mopt').forEach(b=>{
+    b.onclick=function(){
+        if(!currentRoom||!currentSeat)return;
+        data[currentRoom][currentSeat]=this.dataset.v;
+        persist();
+        renderPlan(currentRoom);
+        refreshRoomStats(currentRoom);
+        closeModal();
+    };
+});
+document.getElementById('modal').onclick=e=>{if(e.target===document.getElementById('modal'))closeModal();};
+
+/* ═══════════════════════════════════════
+   BON DE COMMANDE
+═══════════════════════════════════════ */
+function refreshOrder(){
+    const content=document.getElementById('order-content');
+    const dateStr=new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    document.getElementById('print-date').textContent='Édité le '+dateStr;
+
+    const agg={};
+    [...REPLACE_TYPES,...REHOUSSE_TYPES].forEach(t=>agg[t]={total:0,ice:0,rooms:[]});
+    for(let r=1;r<=11;r++){
+        const c=countIssues(r);
+        [...REPLACE_TYPES,...REHOUSSE_TYPES].forEach(t=>{
+            if(c[t]>0){agg[t].total+=c[t];if(r===ICE_ROOM)agg[t].ice+=c[t];if(!agg[t].rooms.includes(ROOM_NAMES[r]))agg[t].rooms.push(ROOM_NAMES[r]);}        });
+    }
+
+    const regLines=[];
+    ['armrest','seat','back','pied'].forEach(t=>{
+        const total=agg[t].total-agg[t].ice;if(total<=0)return;
+        const stock=data.stock[STOCK_KEY_REG[t]]||0;const toOrder=Math.max(0,total-stock);
+        regLines.push({type:TYPE_LABELS[t],total,stock,toOrder,rooms:agg[t].rooms.filter(r=>!r.startsWith('Salle ICE')).join(', ')});
+    });
+    const iceLines=[];
+    ['armrest','seat','back','pied','patere'].forEach(t=>{
+        const total=agg[t].ice;if(total<=0)return;
+        const stock=data.stock[STOCK_KEY_ICE[t]]||0;const toOrder=Math.max(0,total-stock);
+        iceLines.push({type:TYPE_LABELS[t],total,stock,toOrder,rooms:'Salle ICE'});
+    });
+    const rhLines=[];
+    REHOUSSE_TYPES.forEach(t=>{if(agg[t].total>0)rhLines.push({_type:t,type:TYPE_LABELS[t],total:agg[t].total,rooms:agg[t].rooms.join(', ')});});
+
+    if(regLines.length===0&&iceLines.length===0&&rhLines.length===0){
+        content.innerHTML='<div class="no-order">✅ Aucune commande ni réhoussage nécessaire.</div>';return;
+    }
+
+    function makeReplTable(lines,title){
+        if(!lines.length)return'';
+        return`<div class="order-section"><div class="order-section-title">${title}</div>
+            <table class="order-table"><thead><tr>
+                <th>Pièce</th><th>Pannes</th><th>Stock actuel</th><th>À commander</th><th>Salles</th><th>Statut</th>
+            </tr></thead><tbody>${lines.map(l=>`<tr>
+                <td><strong>${l.type}</strong></td>
+                <td class="qty-cell">${l.total}</td>
+                <td class="qty-cell" style="color:${l.stock>0?'#6EE7B7':'#FCA5A5'}">${l.stock}</td>
+                <td class="qty-cell" style="color:${l.toOrder>0?'#FCD34D':'#6EE7B7'}">${l.toOrder>0?l.toOrder:'—'}</td>
+                <td class="room-cell">${l.rooms}</td>
+                <td>${l.toOrder>0?'<span class="badge-urgent">⚠ À commander</span>':'<span class="badge-ok">✓ Stock OK</span>'}</td>
+            </tr>`).join('')}</tbody></table></div>`;
+    }
+
+    let html=makeReplTable(regLines,'🎬 Pièces — Salles 1 à 10');
+    html+=makeReplTable(iceLines,'🧊 Pièces — Salle ICE');
+
+    if(rhLines.length){
+        html+=`<div class="order-section"><div class="order-section-title">🧵 Pièces en réhoussage</div>
+            <table class="order-table"><thead><tr><th>Pièce</th><th>Quantité</th><th>Salles</th><th>Statut</th></tr></thead>
+            <tbody>${rhLines.map(l=>`<tr>
+                <td><strong>${l.type}</strong></td><td class="qty-cell" style="color:#C4B5FD">${l.total}</td>
+                <td class="room-cell">${l.rooms}</td>
+                <td><span class="badge-rehousse">🧵 Réhoussage</span></td>
+            </tr>`).join('')}</tbody></table></div>`;
+    }
+
+    // Section transport — remplacement + réhoussage
+    {
+        const PALETTE_MAX_KG=1500;
+        const POIDS_REG={armrest:'poids_armrest',seat:'poids_seat',back:'poids_back',pied:'poids_pied'};
+        const POIDS_ICE={armrest:'poids_ice_armrest',seat:'poids_ice_seat',back:'poids_ice_back',pied:'poids_ice_pied'};
+        let totalKgAll=0,totalQtyAll=0;
+        const allPoidsRows=[];
+        ['armrest','seat','back','pied'].forEach(t=>{
+            const tot=agg[t].total-agg[t].ice;if(tot<=0)return;
+            const pk=POIDS_REG[t];const w=data.stock[pk]||0;
+            totalQtyAll+=tot;totalKgAll+=w*tot;
+            allPoidsRows.push({key:pk,label:TYPE_LABELS[t]+' (classique)',qty:tot,w});
+        });
+        ['armrest','seat','back','pied'].forEach(t=>{
+            const tot=agg[t].ice;if(tot<=0)return;
+            const pk=POIDS_ICE[t];const w=data.stock[pk]||0;
+            totalQtyAll+=tot;totalKgAll+=w*tot;
+            allPoidsRows.push({key:pk,label:TYPE_LABELS[t]+' (ICE)',qty:tot,w});
+        });
+        rhLines.forEach(l=>{
+            const pk='poids_'+l._type;const w=data.stock[pk]||0;
+            totalQtyAll+=l.total;totalKgAll+=w*l.total;
+            allPoidsRows.push({key:pk,label:l.type+' (réhouss.)',qty:l.total,w});
+        });
+        if(allPoidsRows.length){
+            const nbPalettes=totalKgAll>0?Math.ceil(totalKgAll/PALETTE_MAX_KG):0;
+            const poidsCoul=totalKgAll>0&&totalKgAll<=PALETTE_MAX_KG?'#6EE7B7':totalKgAll>PALETTE_MAX_KG?'#FCA5A5':'#FCD34D';
+            html+=`<div class="order-section transport-section">
+                <div class="order-section-title">🚛 Transport — Palette Europe</div>
+                <div class="transport-info">
+                    <div class="transport-stat"><span class="transport-lbl">Total pièces</span><span class="transport-val">${totalQtyAll}</span></div>
+                    <div class="transport-stat"><span class="transport-lbl">Poids total</span>
+                        <span class="transport-val" style="color:${poidsCoul}">${totalKgAll>0?`${totalKgAll.toFixed(1)} kg — <strong>${nbPalettes} palette(s)</strong>`:'—'}</span></div>
+                    <div class="transport-stat"><span class="transport-lbl">Max / palette</span><span class="transport-val">1 500 kg</span></div>
+                </div>
+                <div class="poids-grid">${allPoidsRows.map(l=>`<div class="poids-item">
+                    <label class="poids-lbl">${l.label} <span style="opacity:.5">(${l.qty}×)</span></label>
+                    <div style="display:flex;align-items:center;gap:.4rem">
+                        <input class="poids-input" type="number" min="0" step="0.1" placeholder="kg/pce"
+                            value="${l.w||''}" oninput="updatePoids('${l.key.replace('poids_','')}',this.value)">
+                        <span style="font-size:.72rem;color:rgba(244,228,188,.5)">kg</span>
+                    </div>
+                    <div style="font-size:.72rem;color:#C4B5FD;margin-top:.15rem">= ${l.w?((l.w*l.qty).toFixed(1)+' kg'):'—'}</div>
+                </div>`).join('')}</div>
+            </div>`;
+        }
+    }
+    const allToOrder=[...regLines,...iceLines].filter(l=>l.toOrder>0);
+    if(allToOrder.length){
+        html+=`<div class="order-section"><div class="order-section-title">📦 Récapitulatif — Total à commander</div>
+            <table class="order-table"><thead><tr><th>Pièce</th><th>Quantité</th></tr></thead>
+            <tbody>${allToOrder.map(l=>`<tr><td><strong>${l.type}</strong></td><td class="qty-cell">${l.toOrder}</td></tr>`).join('')}</tbody></table></div>`;
+    }
+    content.innerHTML=html;
+}
+
+/* ═══════════════════════════════════════
+   RAPPORT DE VÉRIF
+═══════════════════════════════════════ */
+function switchRapportType(type,btn){
+    currentRapportType=type;
+    document.querySelectorAll('.rtype-tab').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+    refreshRapport();
+}
+
+function refreshRapport(){
+    const type=currentRapportType;
+    const items=type==='son'?SON_ITEMS:SECU_ITEMS;
+    const content=document.getElementById('rapport-content');
+    const dateStr=new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    document.getElementById('print-date-rapport').textContent='Édité le '+dateStr;
+
+    let html='';
+    for(let r=1;r<=11;r++){
+        const ck=`check_${r}_${type}`;
+        const saved=data.checks[ck]||{};
+        const tsKey=type==='son'?'son':'secu';
+        const ts=data.dates[r]?.[tsKey];
+        const tsStr=ts?fmtDate(ts):null;
+        const dc=dateClass(ts,r===ICE_ROOM);
+
+        const totalItems=items.reduce((acc,cat)=>acc+cat.items.length,0);
+        const checkedItems=items.reduce((acc,cat)=>acc+cat.items.filter((_,i)=>saved[`${cat.cat}_${i}`]).length,0);
+        const pct=totalItems>0?Math.round(checkedItems/totalItems*100):0;
+        const pctColor=pct>=80?'#4ADE80':pct>=50?'#FCD34D':'#F87171';
+
+        let checksHtml='<div class="rapport-checks">';
+        items.forEach(cat=>{
+            const notesKey=`note_${cat.cat}`;
+            const note=saved[notesKey];
+            let catHtml=`<div class="rapport-cat"><div class="rapport-cat-title">${cat.cat}</div>`;
+            cat.items.forEach((item,i)=>{
+                const ok=saved[`${cat.cat}_${i}`];
+                catHtml+=`<div class="rapport-item"><span class="${ok?'ri-ok':'ri-no'}">${ok?'✔':'✗'}</span>${item}</div>`;
+            });
+            if(note)catHtml+=`<div class="rapport-note">📝 ${note}</div>`;
+            catHtml+='</div>';
+            checksHtml+=catHtml;
+        });
+        checksHtml+='</div>';
+
+        html+=`<div class="rapport-room">
+            <div class="rapport-room-title">
+                <span>${ROOM_NAMES[r]}</span>
+                <span style="display:flex;align-items:center;gap:.6rem">
+                    <span style="font-size:.9rem;font-weight:700;color:${pctColor}">${pct}%</span>
+                    ${tsStr?`<span class="rapport-date ${dc}">🕐 ${tsStr}</span>`:'<span class="rapport-date">Non vérifié</span>'}
+                </span>
+            </div>
+            ${tsStr?checksHtml:'<div class="rapport-none">Aucune vérification enregistrée pour cette salle.</div>'}
+        </div>`;
+    }
+    content.innerHTML=html;
+}
+
+function printRapport(){refreshRapport();window.print();}
+
+/* ═══════════════════════════════════════
+   EMAIL
+═══════════════════════════════════════ */
+function toggleMail(page){
+    const f=document.getElementById(`email-form-${page}`);
+    f.classList.toggle('visible');
+    if(f.classList.contains('visible')){
+        const dateStr=new Date().toLocaleDateString('fr-FR');
+        document.getElementById(`email-subj-${page}`).value=
+            page==='order'?`Bon de commande matériel — ${dateStr}`:`Rapport de vérification — ${dateStr}`;
+        document.getElementById(`email-body-${page}`).value=
+            page==='order'?buildOrderEmailText():buildRapportEmailText();
+    }
+}
+function sendMail(page){
+    const to=document.getElementById(`email-to-${page}`).value;
+    const subj=encodeURIComponent(document.getElementById(`email-subj-${page}`).value);
+    const body=encodeURIComponent(document.getElementById(`email-body-${page}`).value);
+    if(!to){alert('Veuillez saisir une adresse email.');return;}
+    window.location.href=`mailto:${to}?subject=${subj}&body=${body}`;
+}
+function buildOrderEmailText(){
+    let txt='Bonjour,\n\nBon de commande Saint Quentin :\n\n';
+    ['armrest','seat','back','pied'].forEach(t=>{
+        let tot=0;for(let r=1;r<=10;r++)tot+=countIssues(r)[t];
+        const toOrder=Math.max(0,tot-(data.stock[STOCK_KEY_REG[t]]||0));
+        if(toOrder>0)txt+=`- ${TYPE_LABELS[t]} : ${toOrder} unité(s)\n`;
+    });
+    ['armrest','seat','back','pied','patere'].forEach(t=>{
+        const toOrder=Math.max(0,countIssues(ICE_ROOM)[t]-(data.stock[STOCK_KEY_ICE[t]]||0));
+        if(toOrder>0)txt+=`- ${TYPE_LABELS[t]} (ICE) : ${toOrder} unité(s)\n`;
+    });
+    REHOUSSE_TYPES.forEach(t=>{
+        let tot=0;for(let r=1;r<=11;r++)tot+=countIssues(r)[t];
+        if(tot>0)txt+=`- ${TYPE_LABELS[t]} (réhoussage) : ${tot} pièce(s)\n`;
+    });
+    txt+='\nCordialement,\nLa Direction Technique';
+    return txt;
+}
+function buildRapportEmailText(){
+    const type=currentRapportType;
+    const items=type==='son'?SON_ITEMS:SECU_ITEMS;
+    let txt=`Bonjour,\n\nRapport de vérification ${type==='son'?'Son & Image':'Sécurité'} — Saint Quentin\n${new Date().toLocaleDateString('fr-FR')}\n\n`;
+    for(let r=1;r<=11;r++){
+        const ck=`check_${r}_${type}`;
+        const saved=data.checks[ck]||{};
+        const tsKey=type==='son'?'son':'secu';
+        const ts=data.dates[r]?.[tsKey];
+        txt+=`\n${ROOM_NAMES[r]}${ts?' ('+fmtDate(ts)+')':' (non vérifié)'}\n`;
+        items.forEach(cat=>{
+            const unchecked=cat.items.filter((_,i)=>!saved[`${cat.cat}_${i}`]);
+            if(unchecked.length)txt+=`  [${cat.cat}] Non validé : ${unchecked.join(', ')}\n`;
+            const note=saved[`note_${cat.cat}`];
+            if(note)txt+=`  → Note : ${note}\n`;
+        });
+    }
+    txt+='\nCordialement,\nLa Direction Technique';
+    return txt;
+}
+
+function printOrder(){refreshOrder();window.print();}
+
+init();
+</script>
+</body>
+</html>
